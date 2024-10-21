@@ -25,10 +25,14 @@ class ScheduleApp:
 
     def save_data_to_json(self):
         """データフレームをJSONファイルに保存"""
-        self.df["Date"] = self.df["Date"].astype(str)  # 日付を文字列に変換
-        self.df["StartTime"] = self.df["StartTime"].astype(str)  # 開始時間を文字列に変換
+        self.df["Date"] = self.df["Date"].astype(str)
+        self.df["StartTime"] = self.df["StartTime"].astype(str)
         with open(self.json_file_path, "w") as file:
             json.dump(self.df.to_dict(orient="records"), file, indent=4)
+
+    def schedule_exists(self, new_date, start_time):
+        """日程が既に存在するか確認"""
+        return not self.df[(self.df["Date"] == new_date) & (self.df["StartTime"] == start_time)].empty
 
     def add_new_row(self, new_date, start_time):
         """新しい日程の行を追加"""
@@ -37,34 +41,41 @@ class ScheduleApp:
             new_row[col] = "未定"
         self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
 
-    def add_user(self, user_name, new_date, start_time):
-        """新しいユーザーと日程を追加または更新"""
-        if not self.df[(self.df["Date"] == new_date) & (self.df["StartTime"] == start_time)].empty:
+    def add_schedule(self, new_date, start_time):
+        """新しいスケジュールを追加"""
+        if self.schedule_exists(new_date, start_time):
             st.warning("この日程はすでに存在します。")
         else:
             self.add_new_row(new_date, start_time)
-
-        if user_name not in self.df.columns:
-            self.df[user_name] = "未定"
-
-        self.df.loc[
-            (self.df["Date"] == new_date) & (self.df["StartTime"] == start_time),
-            user_name,
-        ] = "未定"
-        self.save_data_to_json()
-        st.success("ユーザーと日程が追加されました！")
+            self.save_data_to_json()
+            st.success("スケジュールが追加されました！")
 
     def add_user_form(self):
-        """ユーザーと日程の追加フォーム"""
+        """ユーザーの追加フォーム"""
         with st.sidebar:
             with st.form("add_user_form"):
                 user_name = st.text_input("ユーザー名を入力してください")
+                add_user = st.form_submit_button("ユーザー追加")
+                if add_user and user_name:
+                    self.add_user(user_name)
+
+    def add_schedule_form(self):
+        """スケジュールの追加フォーム"""
+        with st.sidebar:
+            with st.form("add_schedules"):
                 new_date = st.date_input("日付を追加してください")
                 start_time = st.time_input("開始時間", step=3600)
 
-                add_user = st.form_submit_button("ユーザーと日程を追加")
-                if add_user and user_name:
-                    self.add_user(user_name, new_date, start_time)
+                add_schedule = st.form_submit_button("日程を追加")
+                if add_schedule:
+                    self.add_schedule(new_date, start_time)
+
+    def add_user(self, user_name):
+        """新しいユーザーを追加"""
+        if user_name not in self.df.columns:
+            self.df[user_name] = "未定"
+            self.save_data_to_json()
+            st.success(f"ユーザー '{user_name}' が追加されました！")
 
     def display_editable_dataframe(self):
         """データフレームの表示と編集"""
@@ -89,10 +100,15 @@ class ScheduleApp:
         else:
             st.write("まだ日程が追加されていません。")
 
+    def run(self):
+        """アプリケーションの実行"""
+        self.add_user_form()
+        self.add_schedule_form()
+        self.display_editable_dataframe()
+
 
 # アプリケーションのインスタンスを作成
 app = ScheduleApp("data.json")
 
 # アプリケーションのUIとロジックを実行
-app.add_user_form()
-app.display_editable_dataframe()
+app.run()
