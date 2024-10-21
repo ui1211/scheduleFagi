@@ -1,4 +1,5 @@
 import json
+import os
 
 import pandas as pd
 import streamlit as st
@@ -32,6 +33,17 @@ class ScheduleApp:
             self.df["StartTime"] = self.df["StartTime"].astype(str)
             with open(self.json_file_path, "w") as file:
                 json.dump(self.df.to_dict(orient="records"), file, indent=4)
+
+    def delete_json(self):
+        """Delete the JSON file and reset the dataframe."""
+        if os.path.exists(self.json_file_path):
+            os.remove(self.json_file_path)
+            st.success("Data file deleted successfully!")
+        else:
+            st.warning("No data file found to delete.")
+        self.df = self.create_initial_df()
+        self.save_data_to_json()
+        st.rerun()
 
     def schedule_exists(self, new_date, start_time):
         """Check if the schedule already exists."""
@@ -102,6 +114,9 @@ class ScheduleApp:
                 add_schedule = st.form_submit_button("Add Schedule")
                 if add_schedule:
                     self.add_schedule(new_date, start_time)
+
+            # Add a button to delete the JSON file
+            st.button("Delete Data File", on_click=self.delete_json)
 
     def run(self):
         """Run the application."""
