@@ -91,10 +91,13 @@ class ScheduleApp:
     def add_schedule_form(self):
         """Form for adding a new schedule (in the sidebar)."""
         with st.sidebar:
+            if "user_name" in st.session_state.keys():
+                st.info(f"Welcome to {st.session_state.user_name}")
+
             st.header("Add a New Schedule")
             with st.form("add_schedule_form"):
                 new_date = st.date_input("Select a date")
-                start_time = st.time_input("Select a start time")
+                start_time = st.time_input("Select a start time", step=3600)
 
                 add_schedule = st.form_submit_button("Add Schedule")
                 if add_schedule:
