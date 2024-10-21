@@ -19,16 +19,22 @@ class ScheduleApp:
         try:
             with open(self.json_file_path, "r") as file:
                 data = json.load(file)
-                return pd.DataFrame(data)
+                df = pd.DataFrame(data)
+                # 必要なカラムが存在しない場合は初期化
+                if "Date" not in df.columns or "StartTime" not in df.columns:
+                    return self.create_initial_df()
+                return df
         except (FileNotFoundError, json.JSONDecodeError):
             return self.create_initial_df()
 
     def save_data_to_json(self):
         """データフレームをJSONファイルに保存"""
-        self.df["Date"] = self.df["Date"].astype(str)
-        self.df["StartTime"] = self.df["StartTime"].astype(str)
-        with open(self.json_file_path, "w") as file:
-            json.dump(self.df.to_dict(orient="records"), file, indent=4)
+        # "Date" と "StartTime" が存在するか確認
+        if "Date" in self.df.columns and "StartTime" in self.df.columns:
+            self.df["Date"] = self.df["Date"].astype(str)
+            self.df["StartTime"] = self.df["StartTime"].astype(str)
+            with open(self.json_file_path, "w") as file:
+                json.dump(self.df.to_dict(orient="records"), file, indent=4)
 
     def schedule_exists(self, new_date, start_time):
         """日程が既に存在するか確認"""
